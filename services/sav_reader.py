@@ -42,7 +42,7 @@ CATEGORY_MAPPING = [
     (r"^Q_(69|7[0-3])$", "Medios de Comunicación y Democracia"),
     (r"^T_Q_7[23]_\d+$", "Medios de Comunicación y Democracia"),
     # Sociodemographic Data (Q_74 - Q_98, T_Q_80 - T_Q_98)
-    (r"^Q_(7[4-9]|8\d|9[0-8])(_S)?$", "Datos Sociodemográficos"),
+    (r"^Q_(7[4-9]|8[0-9]|9[0-8])(_S)?$", "Datos Sociodemográficos"),
     (r"^T_Q_(8[0-9]|9[0-8])_\d+$", "Datos Sociodemográficos"),
     # Derived and Classification Variables
     (["SEXO", "CALIDAD_VIDA", "EDAD", "ESC", "IND_SE2024", "NSE2024", "NSE2024_C", "FACTOR"], 
