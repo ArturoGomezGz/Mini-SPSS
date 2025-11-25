@@ -166,6 +166,27 @@ class SAVReader:
             "total_respuestas": total_respuestas
         }
     
+    def _apply_simple_filter(
+        self, df, column: str, value, filtros_aplicados: dict, filter_key: str
+    ):
+        """
+        Apply a simple equality filter to the dataframe.
+        
+        Args:
+            df: DataFrame to filter
+            column: Column name to filter on
+            value: Value to filter for
+            filtros_aplicados: Dictionary to record applied filters
+            filter_key: Key name for the filter in filtros_aplicados
+            
+        Returns:
+            Filtered DataFrame
+        """
+        if column in df.columns:
+            df = df[df[column] == value]
+            filtros_aplicados[filter_key] = value
+        return df
+    
     def get_question_responses_with_filters(
         self, question_id: str, tipo: str = "cantidad", filtros: dict = None
     ) -> dict:
@@ -200,59 +221,42 @@ class SAVReader:
         filtros_aplicados = {}
         
         if filtros:
-            # Filter by calidad_vida (CALIDAD_VIDA column)
-            if "calidad_vida" in filtros and filtros["calidad_vida"] is not None:
-                if "CALIDAD_VIDA" in filtered_df.columns:
-                    filtered_df = filtered_df[
-                        filtered_df["CALIDAD_VIDA"] == filtros["calidad_vida"]
-                    ]
-                    filtros_aplicados["calidad_vida"] = filtros["calidad_vida"]
+            # Define simple filter mappings: filter_key -> column_name
+            simple_filters = {
+                "calidad_vida": "CALIDAD_VIDA",
+                "municipio": "Q_94",
+                "sexo": "SEXO",
+                "escolaridad": "ESC",
+                "nse": "NSE2024_C"
+            }
             
-            # Filter by municipio (Q_94 column)
-            if "municipio" in filtros and filtros["municipio"] is not None:
-                if "Q_94" in filtered_df.columns:
-                    filtered_df = filtered_df[
-                        filtered_df["Q_94"] == filtros["municipio"]
-                    ]
-                    filtros_aplicados["municipio"] = filtros["municipio"]
-            
-            # Filter by sexo (SEXO column)
-            if "sexo" in filtros and filtros["sexo"] is not None:
-                if "SEXO" in filtered_df.columns:
-                    filtered_df = filtered_df[
-                        filtered_df["SEXO"] == filtros["sexo"]
-                    ]
-                    filtros_aplicados["sexo"] = filtros["sexo"]
+            # Apply simple equality filters
+            for filter_key, column_name in simple_filters.items():
+                if filter_key in filtros and filtros[filter_key] is not None:
+                    filtered_df = self._apply_simple_filter(
+                        filtered_df, column_name, filtros[filter_key],
+                        filtros_aplicados, filter_key
+                    )
             
             # Filter by edad (Q_75 column - actual age in years)
             if "edad" in filtros and filtros["edad"] is not None:
                 edad_filter = filtros["edad"]
                 if "Q_75" in filtered_df.columns:
-                    if "min" in edad_filter and edad_filter["min"] is not None:
+                    min_age = edad_filter.get("min")
+                    max_age = edad_filter.get("max")
+                    
+                    # Build condition for age range filter
+                    if min_age is not None and max_age is not None:
                         filtered_df = filtered_df[
-                            filtered_df["Q_75"] >= edad_filter["min"]
+                            (filtered_df["Q_75"] >= min_age) & 
+                            (filtered_df["Q_75"] <= max_age)
                         ]
-                    if "max" in edad_filter and edad_filter["max"] is not None:
-                        filtered_df = filtered_df[
-                            filtered_df["Q_75"] <= edad_filter["max"]
-                        ]
+                    elif min_age is not None:
+                        filtered_df = filtered_df[filtered_df["Q_75"] >= min_age]
+                    elif max_age is not None:
+                        filtered_df = filtered_df[filtered_df["Q_75"] <= max_age]
+                    
                     filtros_aplicados["edad"] = edad_filter
-            
-            # Filter by escolaridad (ESC column)
-            if "escolaridad" in filtros and filtros["escolaridad"] is not None:
-                if "ESC" in filtered_df.columns:
-                    filtered_df = filtered_df[
-                        filtered_df["ESC"] == filtros["escolaridad"]
-                    ]
-                    filtros_aplicados["escolaridad"] = filtros["escolaridad"]
-            
-            # Filter by nse (NSE2024_C column)
-            if "nse" in filtros and filtros["nse"] is not None:
-                if "NSE2024_C" in filtered_df.columns:
-                    filtered_df = filtered_df[
-                        filtered_df["NSE2024_C"] == filtros["nse"]
-                    ]
-                    filtros_aplicados["nse"] = filtros["nse"]
         
         # Get question label
         column_labels = meta.column_names_to_labels if meta.column_names_to_labels else {}

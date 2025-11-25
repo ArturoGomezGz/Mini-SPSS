@@ -33,7 +33,7 @@ class FiltrosRequest(BaseModel):
         sexo: Gender (1="Hombre", 2="Mujer")
         edad: Age filter - can be a range with min/max
         escolaridad: Education level (1="Sec<", 2="Prep", 3="Univ+")
-        nse: Socioeconomic level (1="D+/D/E", 2="C/C-", 3="A/B/C+")
+        nse: Socioeconomic level (1="D+/D/E", 2="C/C-", 3="A/B/C+", 4="SIN DATOS SUFICIENTES")
     """
     calidad_vida: Optional[int] = None
     municipio: Optional[int] = None
@@ -130,7 +130,7 @@ def get_respuestas_con_filtros(
     - sexo: 1 (Hombre), 2 (Mujer)
     - edad: {"min": 18, "max": 35} - Filter by actual age range
     - escolaridad: 1 (Sec<), 2 (Prep), 3 (Univ+)
-    - nse: 1 (D+/D/E), 2 (C/C-), 3 (A/B/C+)
+    - nse: 1 (D+/D/E), 2 (C/C-), 3 (A/B/C+), 4 (SIN DATOS SUFICIENTES)
     
     Returns:
     - identificador: The question identifier
@@ -141,26 +141,14 @@ def get_respuestas_con_filtros(
     - filtros_aplicados: Dictionary of filters that were applied
     """
     try:
-        # Convert Pydantic model to dict for the service
-        filtros_dict = {}
-        if filtros.calidad_vida is not None:
-            filtros_dict["calidad_vida"] = filtros.calidad_vida
-        if filtros.municipio is not None:
-            filtros_dict["municipio"] = filtros.municipio
-        if filtros.sexo is not None:
-            filtros_dict["sexo"] = filtros.sexo
-        if filtros.edad is not None:
-            edad_dict = {}
-            if filtros.edad.min is not None:
-                edad_dict["min"] = filtros.edad.min
-            if filtros.edad.max is not None:
-                edad_dict["max"] = filtros.edad.max
-            if edad_dict:
-                filtros_dict["edad"] = edad_dict
-        if filtros.escolaridad is not None:
-            filtros_dict["escolaridad"] = filtros.escolaridad
-        if filtros.nse is not None:
-            filtros_dict["nse"] = filtros.nse
+        # Convert Pydantic model to dict, excluding None values
+        filtros_dict = filtros.model_dump(exclude_none=True)
+        
+        # Handle nested edad model
+        if "edad" in filtros_dict and isinstance(filtros_dict["edad"], dict):
+            # Remove empty edad dict if both min and max are None
+            if not filtros_dict["edad"]:
+                del filtros_dict["edad"]
         
         return sav_reader.get_question_responses_with_filters(
             question_id, tipo.value, filtros_dict
