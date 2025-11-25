@@ -154,7 +154,8 @@ def get_respuestas(
         })
     
     # Sort by value for consistent ordering
-    respuestas.sort(key=lambda x: x["valor"])
+    # Use a key function that handles mixed types safely
+    respuestas.sort(key=lambda x: (isinstance(x["valor"], str), x["valor"]))
     
     return {
         "identificador": question_id,
