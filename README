@@ -1,0 +1,251 @@
+# SPSS Data API – Proyecto de Procesamiento, Filtrado y Exportación de Datos de Encuestas
+
+Este proyecto tiene como objetivo construir un sistema backend capaz de **leer datos provenientes de encuestas en formato CSV o SAV**, procesarlos, aplicar filtros, generar cruces, calcular estadísticas y finalmente **exportar resultados en un formato JSON universal**, optimizado para aplicaciones móviles o dashboards.
+
+El propósito principal es convertir bases de datos complejas —como encuestas de percepción ciudadana o calidad de vida— en información accesible, filtrable y visualizable para aplicaciones finales.
+
+---
+
+# 🧠 Características Principales
+
+## ✔ Lectura de bases de datos (.sav o .csv)
+
+* Compatible con SPSS (.sav) mediante `pyreadstat`.
+* Compatible con CSV mediante `pandas`.
+* Obtiene metadatos (labels, categorías, tipos de variables).
+
+## ✔ Filtros dinámicos
+
+El usuario puede filtrar por cualquier variable, por ejemplo:
+
+* Municipio
+* Sexo
+* Nivel socioeconómico
+* Rango de edad
+
+## ✔ Cruces / Tablas dinámicas (Crosstabs)
+
+Generación de cruces entre dos variables, incluyendo:
+
+* Conteos
+* Porcentajes
+* Opcionalmente ponderación mediante variable FACTOR
+
+## ✔ Estadísticas descriptivas
+
+* Media
+* Mediana
+* Moda
+* Rangos
+* Distribuciones
+
+## ✔ Exportación universal a JSON para aplicaciones móviles
+
+Formato adaptable para gráficas:
+
+* Barras
+* Pastel
+* Línea
+* Área
+* Barras apiladas
+* Progreso
+
+---
+
+# 🏛 Arquitectura General del Sistema
+
+```
+📦 backend/
+ ├── data/
+ │    └── archivos .csv / .sav
+ ├── api/
+ │    ├── main.py            → Punto de entrada FastAPI
+ │    ├── router_variables.py → /variables
+ │    ├── router_charts.py    → /chart
+ │    ├── router_filters.py   → /filter
+ │    ├── router_crosstab.py  → /crosstab
+ │    ├── services/
+ │    │     ├── loader.py     → Carga de CSV / SAV
+ │    │     ├── filters.py    → Lógica de filtrado
+ │    │     ├── charts.py     → Construcción del JSON universal
+ │    │     └── stats.py      → Estadísticas descriptivas
+ ├── tests/
+ │    └── pruebas unitarias
+ └── README.md
+```
+
+---
+
+# 🧩 Endpoints principales
+
+## 1. **GET /variables**
+
+Devuelve la lista de variables detectadas en el dataset.
+
+**Ejemplo de respuesta:**
+
+```json
+{
+  "variables": [
+    {"name": "SEXO", "label": "Sexo del entrevistado", "type": "categorical"},
+    {"name": "EDAD", "label": "Edad en rangos", "type": "ordinal"},
+    {"name": "CALIDAD_VIDA", "label": "Índice de calidad de vida", "type": "numeric"}
+  ]
+}
+```
+
+---
+
+## 2. **POST /filter**
+
+Aplica filtros dinámicos a la base de datos.
+
+**Ejemplo de petición:**
+
+```json
+{
+  "filters": {
+    "SEXO": 2,
+    "EDAD": {"min": 18, "max": 30},
+    "NSE2024": [3, 4]
+  }
+}
+```
+
+**Ejemplo de respuesta:**
+
+```json
+{
+  "rows": 1243,
+  "columns": 265,
+  "preview": [
+    {"Q_1": 4, "Q_2": 3, "SEXO": 2, "EDAD": 22},
+    {"Q_1": 5, "Q_2": 4, "SEXO": 2, "EDAD": 19}
+  ]
+}
+```
+
+---
+
+## 3. **POST /crosstab**
+
+Genera una tabla dinámica entre dos variables.
+
+**Petición:**
+
+```json
+{
+  "var1": "SEXO",
+  "var2": "Q_1",
+  "weight": "FACTOR"
+}
+```
+
+**Respuesta (lista para gráfica de barras apiladas):**
+
+```json
+{
+  "chartType": "stackedBar",
+  "chartData": {
+    "labels": ["Hombre", "Mujer"],
+    "series": ["1", "2", "3", "4", "5"],
+    "values": [
+      [12, 20, 30, 25, 13],
+      [10, 30, 28, 22, 10]
+    ]
+  }
+}
+```
+
+---
+
+# 📊 Ejemplo de JSON universal generado por /chart
+
+**Petición:**
+
+```json
+{
+  "variable": "Q_5",
+  "chartType": "bar",
+  "filter": {"SEXO": 1}
+}
+```
+
+**Respuesta:**
+
+```json
+{
+  "id": "survey-021",
+  "title": "Satisfacción con servicios públicos",
+  "category": "Servicios Públicos",
+  "question": "¿Qué tan satisfecho está con X?",
+  "chartType": "bar",
+  "description": "Distribución de respuestas para la pregunta seleccionada.",
+  "chartData": {
+    "labels": ["1", "2", "3", "4", "5"],
+    "values": [5, 12, 30, 40, 13]
+  }
+}
+```
+
+---
+
+# 🔧 Ejemplo de implementación interna (chart builder)
+
+```python
+import pandas as pd
+
+def build_bar_chart(df, variable):
+    counts = df[variable].value_counts().sort_index()
+    return {
+        "chartType": "bar",
+        "chartData": {
+            "labels": counts.index.astype(str).tolist(),
+            "values": counts.values.tolist()
+        }
+    }
+```
+
+---
+
+# 🚀 Flujo completo del sistema
+
+1. El usuario selecciona una pregunta y filtros en la app.
+2. La app envía una solicitud JSON a `/chart`.
+3. El backend filtra el DataFrame.
+4. Según el tipo de gráfico solicitado, se aplica un *chart builder*.
+5. Se devuelve un **JSON estandarizado** que la app puede graficar directamente.
+
+---
+
+# 🎯 Objetivo final del proyecto
+
+Construir una API robusta, flexible y universalmente compatible que permita transformar encuestas complejas en información útil y visualizable, facilitando investigación, análisis ciudadano y toma de decisiones.
+
+Esta arquitectura permitirá:
+
+* Escalar a nuevos años de encuestas.
+* Integrar diferentes formatos de datos.
+* Agregar nuevos tipos de gráficas.
+* Automatizar análisis completos.
+
+---
+
+# 📁 Archivos procesados
+
+Actualmente se ha procesado el archivo:
+
+* `Base de datos_Novena Encuesta de Percepción sobre Calidad de Vida-oct-2024 (1).csv`
+
+Se encuentra disponible en:
+`/mnt/data/Base de datos_Novena Encuesta de Percepción sobre Calidad de Vida-oct-2024 (1).csv`
+
+---
+
+Si deseas, puedo generar:
+
+* Código inicial de la API (FastAPI)
+* Test unitarios
+* Scripts automáticos de carga de datos
+* Dashboard de administración
+* Diagrama de arquitectura completo
