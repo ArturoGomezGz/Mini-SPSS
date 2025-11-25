@@ -6,8 +6,70 @@ It provides functions for loading data, caching, and parsing questions and respo
 """
 
 import os
-from typing import Any, Tuple
+import re
+from typing import Any, Optional, Tuple
 import pyreadstat
+
+
+# Category mapping based on question identifier patterns
+# Categories as defined in the survey structure documentation
+CATEGORY_MAPPING = [
+    # Metadata variables
+    (["SbjNum", "Date", "Duration"], "Metadatos"),
+    # Quality of Life and Satisfaction (Q_1 - Q_11)
+    (r"^Q_([1-9]|1[01])(_S)?$", "Calidad de Vida y Satisfacción"),
+    # Public Services (T_Q_12_1 - T_Q_13_6)
+    (r"^T_Q_1[23]_\d+$", "Servicios Públicos"),
+    # Government and Public Administration (Q_14 - Q_22)
+    (r"^Q_(1[4-9]|2[0-2])(_S)?$", "Gobierno y Administración Pública"),
+    # Mobility and Transportation (Q_23 - Q_32, T_Q_25 - T_Q_30)
+    (r"^Q_(2[3-9]|3[0-2])(_O\d+)?(_S)?(_C)?$", "Movilidad y Transporte"),
+    (r"^T_Q_(2[5-9]|30)_\d+$", "Movilidad y Transporte"),
+    # Urban Infrastructure (Q_33 - Q_43, T_Q_36 - T_Q_43)
+    (r"^Q_(3[3-9]|4[0-3])(_O\d+)?(_C)?$", "Infraestructura Urbana"),
+    (r"^T_Q_(3[6-9]|4[0-3])_\d+$", "Infraestructura Urbana"),
+    # Road Safety (Q_44 - Q_48)
+    (r"^Q_4[4-8](_O\d+)?$", "Seguridad Vial"),
+    # Public Safety and Crime (Q_49 - Q_55)
+    (r"^Q_(49|5[0-5])$", "Seguridad Pública y Delincuencia"),
+    # Violence and Coexistence (Q_56 - Q_66, T_Q_58 - T_Q_66)
+    (r"^Q_(5[6-9]|6[0-6])$", "Violencia y Convivencia"),
+    (r"^T_Q_(5[89]|6[0-6])_\d+$", "Violencia y Convivencia"),
+    # Citizen Participation (Q_67 - Q_68, T_Q_68)
+    (r"^Q_6[78](_O\d+)?$", "Participación Ciudadana"),
+    (r"^T_Q_68_\d+$", "Participación Ciudadana"),
+    # Media and Democracy (Q_69 - Q_73, T_Q_72 - T_Q_73)
+    (r"^Q_(69|7[0-3])$", "Medios de Comunicación y Democracia"),
+    (r"^T_Q_7[23]_\d+$", "Medios de Comunicación y Democracia"),
+    # Sociodemographic Data (Q_74 - Q_98, T_Q_80 - T_Q_98)
+    (r"^Q_(7[4-9]|8\d|9[0-8])(_S)?$", "Datos Sociodemográficos"),
+    (r"^T_Q_(8[0-9]|9[0-8])_\d+$", "Datos Sociodemográficos"),
+    # Derived and Classification Variables
+    (["SEXO", "CALIDAD_VIDA", "EDAD", "ESC", "IND_SE2024", "NSE2024", "NSE2024_C", "FACTOR"], 
+     "Variables Derivadas y de Clasificación"),
+]
+
+
+def get_category_for_question(identifier: str) -> Optional[str]:
+    """
+    Get the category for a given question identifier.
+    
+    Args:
+        identifier: The question identifier (e.g., Q_1, T_Q_12_1)
+        
+    Returns:
+        The category name or None if not found
+    """
+    for pattern, category in CATEGORY_MAPPING:
+        if isinstance(pattern, list):
+            # Direct match for list of identifiers
+            if identifier in pattern:
+                return category
+        else:
+            # Regex match for patterns
+            if re.match(pattern, identifier):
+                return category
+    return None
 
 
 class SAVReaderError(Exception):
@@ -87,9 +149,13 @@ class SAVReader:
         for column in df.columns:
             # Only include columns that have a label (question text)
             if column in column_labels and column_labels[column]:
+                # Get the category for this question
+                categoria = get_category_for_question(column)
+                
                 pregunta_info = {
                     "identificador": column,
                     "pregunta": column_labels[column],
+                    "categoria": categoria,
                     "opciones": []
                 }
                 

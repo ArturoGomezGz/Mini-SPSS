@@ -38,6 +38,7 @@ def get_preguntas():
     Returns for each question:
     - identificador: The variable identifier (e.g., Q_1, T_Q_12_1)
     - pregunta: The question text
+    - categoria: The category the question belongs to (e.g., "Calidad de Vida y Satisfacción")
     - opciones: List of possible answer options
     """
     try:
