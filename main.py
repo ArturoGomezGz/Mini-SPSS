@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException, Query
 from enum import Enum
 import os
 
-from services.sav_reader import SAVReader, SAVReaderError
+from services.sav_reader import SAVReader, SAVReaderError, QuestionNotFoundError
 
 app = FastAPI()
 
@@ -71,7 +71,7 @@ def get_respuestas(
     """
     try:
         return sav_reader.get_question_responses(question_id, tipo.value)
+    except QuestionNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except SAVReaderError as e:
-        if "no encontrada" in str(e):
-            raise HTTPException(status_code=404, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))

@@ -6,11 +6,17 @@ It provides functions for loading data, caching, and parsing questions and respo
 """
 
 import os
+from typing import Any, Tuple
 import pyreadstat
 
 
 class SAVReaderError(Exception):
     """Custom exception for SAV reader errors."""
+    pass
+
+
+class QuestionNotFoundError(SAVReaderError):
+    """Exception raised when a question is not found in the data."""
     pass
 
 
@@ -33,7 +39,7 @@ class SAVReader:
         """Return the file path."""
         return self._file_path
     
-    def load_data(self):
+    def load_data(self) -> Tuple[Any, Any]:
         """
         Load and cache the dataframe and metadata from the SAV file.
         
@@ -118,7 +124,7 @@ class SAVReader:
         
         # Check if the question exists
         if question_id not in df.columns:
-            raise SAVReaderError(f"Pregunta '{question_id}' no encontrada")
+            raise QuestionNotFoundError(f"Pregunta '{question_id}' no encontrada")
         
         # Get question label
         column_labels = meta.column_names_to_labels if meta.column_names_to_labels else {}
