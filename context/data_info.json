@@ -1,6 +1,6 @@
 {
   "archivo": "datos.sav",
-  "fecha_analisis": "2025-11-25T09:46:29.630421",
+  "fecha_analisis": "2025-11-25T09:56:10.957060",
   "estructura": {
     "filas": 2418,
     "columnas": 265,
@@ -3188,7 +3188,7 @@
       "mediana": 5.0,
       "min": 5.0,
       "max": 5.0,
-      "desviacion_std": null,
+      "desviacion_std": NaN,
       "valores_unicos": 1
     },
     "Q_23_O5": {
@@ -3197,7 +3197,7 @@
       "mediana": 7.0,
       "min": 7.0,
       "max": 7.0,
-      "desviacion_std": null,
+      "desviacion_std": NaN,
       "valores_unicos": 1
     },
     "Q_23_O6": {

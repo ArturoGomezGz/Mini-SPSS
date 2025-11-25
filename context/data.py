@@ -125,7 +125,7 @@ for col in df.columns:
     data_info["estadisticas_descriptivas"][col] = col_stats
 
 # Guardar información en JSON
-json_output = "data_info.json"
+json_output = "./context/data_info.json"
 with open(json_output, 'w', encoding='utf-8') as f:
     json.dump(data_info, f, indent=2, ensure_ascii=False)
 
