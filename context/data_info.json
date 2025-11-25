@@ -1827,7 +1827,7 @@
         "4.0": "Motocicleta\t\t\t",
         "5.0": "Bicicleta\t\t",
         "6.0": "Tren Ligero",
-        "7.0": "Caminando",
+        "7.0": "Caminulldo",
         "8.0": "Mototaxi",
         "9.0": "Scooter/patín eléctrico",
         "10.0": "No aplica (persona sin movilidad, por enfermedad o discapacidad [NO LEER])",
@@ -3188,7 +3188,7 @@
       "mediana": 5.0,
       "min": 5.0,
       "max": 5.0,
-      "desviacion_std": NaN,
+      "desviacion_std": null,
       "valores_unicos": 1
     },
     "Q_23_O5": {
@@ -3197,7 +3197,7 @@
       "mediana": 7.0,
       "min": 7.0,
       "max": 7.0,
-      "desviacion_std": NaN,
+      "desviacion_std": null,
       "valores_unicos": 1
     },
     "Q_23_O6": {
