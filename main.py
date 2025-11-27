@@ -5,15 +5,28 @@ This module contains the FastAPI application and all the API route definitions.
 The data reading logic is handled by the services.sav_reader module.
 """
 
-from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Query, Depends
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 from enum import Enum
 import os
+from sqlalchemy.orm import Session
 
 from services.sav_reader import SAVReader, SAVReaderError, QuestionNotFoundError
+from services.database import get_db, init_db
+from services.profile_service import (
+    ProfileService,
+    ProfileNotFoundError,
+    ProfileAlreadyExistsError
+)
 
 app = FastAPI()
+
+# Initialize the database on startup
+@app.on_event("startup")
+def startup_event():
+    """Initialize the database when the application starts."""
+    init_db()
 
 
 class RangoEdad(BaseModel):
@@ -157,3 +170,146 @@ def get_respuestas_con_filtros(
         raise HTTPException(status_code=404, detail=str(e))
     except SAVReaderError as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Profile Models
+class PerfilBase(BaseModel):
+    """Base model for profile data."""
+    nombre: str
+    email: EmailStr
+    telefono: Optional[str] = None
+
+
+class PerfilCreate(PerfilBase):
+    """Model for creating a new profile."""
+    pass
+
+
+class PerfilUpdate(BaseModel):
+    """Model for updating a profile. All fields are optional."""
+    nombre: Optional[str] = None
+    email: Optional[EmailStr] = None
+    telefono: Optional[str] = None
+
+
+class PerfilResponse(PerfilBase):
+    """Model for profile response with ID."""
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
+# Profile Endpoints
+@app.post("/perfil", response_model=PerfilResponse, status_code=201)
+def crear_perfil(perfil: PerfilCreate, db: Session = Depends(get_db)):
+    """
+    Create a new user profile.
+    
+    Parameters:
+    - nombre: User's name (required)
+    - email: User's email address (required, must be unique)
+    - telefono: User's phone number (optional)
+    
+    Returns:
+    - The created profile with its ID
+    """
+    try:
+        user = ProfileService.create_profile(
+            db=db,
+            nombre=perfil.nombre,
+            email=perfil.email,
+            telefono=perfil.telefono
+        )
+        return user
+    except ProfileAlreadyExistsError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/perfil/{user_id}", response_model=PerfilResponse)
+def obtener_perfil(user_id: int, db: Session = Depends(get_db)):
+    """
+    Get a user profile by ID.
+    
+    Parameters:
+    - user_id: The ID of the user
+    
+    Returns:
+    - The user profile data
+    """
+    try:
+        user = ProfileService.get_profile(db=db, user_id=user_id)
+        return user
+    except ProfileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/perfiles", response_model=list[PerfilResponse])
+def listar_perfiles(
+    skip: int = Query(default=0, ge=0, description="Número de registros a saltar"),
+    limit: int = Query(default=100, ge=1, le=100, description="Número máximo de registros"),
+    db: Session = Depends(get_db)
+):
+    """
+    List all user profiles with pagination.
+    
+    Parameters:
+    - skip: Number of records to skip (default: 0)
+    - limit: Maximum number of records to return (default: 100, max: 100)
+    
+    Returns:
+    - List of user profiles
+    """
+    users = ProfileService.get_all_profiles(db=db, skip=skip, limit=limit)
+    return users
+
+
+@app.put("/perfil/{user_id}", response_model=PerfilResponse)
+def actualizar_perfil(
+    user_id: int,
+    perfil: PerfilUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Update an existing user profile.
+    
+    Parameters:
+    - user_id: The ID of the user to update
+    - nombre: New name (optional)
+    - email: New email address (optional, must be unique)
+    - telefono: New phone number (optional)
+    
+    Returns:
+    - The updated profile data
+    """
+    try:
+        user = ProfileService.update_profile(
+            db=db,
+            user_id=user_id,
+            nombre=perfil.nombre,
+            email=perfil.email,
+            telefono=perfil.telefono
+        )
+        return user
+    except ProfileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ProfileAlreadyExistsError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.delete("/perfil/{user_id}")
+def eliminar_perfil(user_id: int, db: Session = Depends(get_db)):
+    """
+    Delete a user profile.
+    
+    Parameters:
+    - user_id: The ID of the user to delete
+    
+    Returns:
+    - Confirmation message
+    """
+    try:
+        ProfileService.delete_profile(db=db, user_id=user_id)
+        return {"message": f"Usuario con ID {user_id} eliminado correctamente"}
+    except ProfileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
