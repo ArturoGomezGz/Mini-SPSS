@@ -65,6 +65,20 @@ class SAVReader:
         self._cached_data = (df, meta)
         return self._cached_data
     
+    def _filter_preguntas_by_category(self, preguntas: list, categoria_id: int) -> list:
+        """
+        Filter questions by category id.
+        
+        Args:
+            preguntas: List of question dictionaries
+            categoria_id: Category id to filter by
+            
+        Returns:
+            Filtered list of questions
+        """
+        category_questions = get_questions_by_category(categoria_id)
+        return [p for p in preguntas if p["identificador"] in category_questions]
+
     def load_preguntas(self, categoria_id: Optional[int] = None) -> list:
         """
         Load and parse questions from the SAV file.
@@ -78,12 +92,10 @@ class SAVReader:
         Raises:
             SAVReaderError: If there's an error loading the data
         """
-        # If filtering by category and cache exists, filter from cache
+        # If cache exists, use it
         if self._cached_preguntas is not None:
             if categoria_id is not None:
-                # Get questions for the specified category
-                category_questions = get_questions_by_category(categoria_id)
-                return [p for p in self._cached_preguntas if p["identificador"] in category_questions]
+                return self._filter_preguntas_by_category(self._cached_preguntas, categoria_id)
             return self._cached_preguntas
         
         df, meta = self.load_data()
@@ -91,6 +103,11 @@ class SAVReader:
         # Get column labels (questions) and value labels (answer options)
         column_labels = meta.column_names_to_labels if meta.column_names_to_labels else {}
         value_labels = meta.variable_value_labels if meta.variable_value_labels else {}
+        
+        # Pre-compute category questions set if filtering
+        category_questions_set = None
+        if categoria_id is not None:
+            category_questions_set = set(get_questions_by_category(categoria_id))
         
         preguntas = []
         
@@ -119,10 +136,9 @@ class SAVReader:
         
         self._cached_preguntas = preguntas
         
-        # If filtering by category, return filtered list
+        # Return filtered list if category specified
         if categoria_id is not None:
-            category_questions = get_questions_by_category(categoria_id)
-            return [p for p in preguntas if p["identificador"] in category_questions]
+            return self._filter_preguntas_by_category(preguntas, categoria_id)
         
         return preguntas
     
