@@ -11,7 +11,7 @@ from typing import Optional
 from enum import Enum
 import os
 
-from services.sav_reader import SAVReader, SAVReaderError, QuestionNotFoundError
+from services.sav_reader import SAVReader, SAVReaderError, QuestionNotFoundError, CategoryNotFoundError
 
 app = FastAPI()
 
@@ -67,11 +67,56 @@ def get_preguntas():
     Returns for each question:
     - identificador: The variable identifier (e.g., Q_1, T_Q_12_1)
     - pregunta: The question text
+    - categoria: Category information (id and nombre) or null if not categorized
     - opciones: List of possible answer options
     """
     try:
         preguntas = sav_reader.load_preguntas()
         return {"preguntas": preguntas}
+    except SAVReaderError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/categorias")
+def get_categorias():
+    """
+    Endpoint that returns all available question categories.
+    
+    Returns for each category:
+    - id: The category identifier
+    - nombre: The category name
+    - descripcion: A short description of the category
+    """
+    try:
+        categorias = sav_reader.get_categorias()
+        return {"categorias": categorias}
+    except SAVReaderError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/preguntas/categoria/{categoria_id}")
+def get_preguntas_por_categoria(categoria_id: int):
+    """
+    Endpoint that returns all questions for a specific category.
+    
+    Parameters:
+    - categoria_id: The category identifier (1-13)
+    
+    Returns for each question:
+    - identificador: The variable identifier (e.g., Q_1, T_Q_12_1)
+    - pregunta: The question text
+    - categoria: Category information (id and nombre)
+    - opciones: List of possible answer options
+    """
+    try:
+        preguntas = sav_reader.get_preguntas_by_categoria(categoria_id)
+        categoria = sav_reader.get_categoria_by_id(categoria_id)
+        return {
+            "categoria": categoria,
+            "preguntas": preguntas
+        }
+    except CategoryNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except SAVReaderError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
