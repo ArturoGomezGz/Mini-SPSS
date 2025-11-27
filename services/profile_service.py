@@ -140,15 +140,11 @@ class ProfileService:
         if user is None:
             raise ProfileNotFoundError(f"Usuario con ID {user_id} no encontrado")
         
+        new_email = None
         if nombre is not None:
             user.nombre = nombre
         if email is not None and email != user.email:
-            # Check if email already exists
-            existing = db.query(User).filter(User.email == email).first()
-            if existing:
-                raise ProfileAlreadyExistsError(
-                    f"Un usuario con el email '{email}' ya existe"
-                )
+            new_email = email
             user.email = email
         if telefono is not None:
             user.telefono = telefono
@@ -159,8 +155,12 @@ class ProfileService:
             return user
         except IntegrityError:
             db.rollback()
+            if new_email is not None:
+                raise ProfileAlreadyExistsError(
+                    f"Un usuario con el email '{new_email}' ya existe"
+                )
             raise ProfileAlreadyExistsError(
-                f"Un usuario con el email '{email}' ya existe"
+                "Error de integridad al actualizar el perfil"
             )
 
     @staticmethod

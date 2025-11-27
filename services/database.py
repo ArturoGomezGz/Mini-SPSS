@@ -5,8 +5,7 @@ This module handles the database connection and session management using SQLAlch
 """
 
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 
 # SQLite database URL - creates a file called 'users.db' in the project root

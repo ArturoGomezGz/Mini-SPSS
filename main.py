@@ -5,6 +5,7 @@ This module contains the FastAPI application and all the API route definitions.
 The data reading logic is handled by the services.sav_reader module.
 """
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query, Depends
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -20,13 +21,17 @@ from services.profile_service import (
     ProfileAlreadyExistsError
 )
 
-app = FastAPI()
 
-# Initialize the database on startup
-@app.on_event("startup")
-def startup_event():
-    """Initialize the database when the application starts."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan context manager for startup and shutdown events."""
+    # Startup: Initialize the database
     init_db()
+    yield
+    # Shutdown: No cleanup needed
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 class RangoEdad(BaseModel):
