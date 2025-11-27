@@ -6,8 +6,10 @@ It provides functions for loading data, caching, and parsing questions and respo
 """
 
 import os
-from typing import Any, Tuple
+from typing import Any, Optional, Tuple
 import pyreadstat
+
+from services.categories import get_category_for_question, get_questions_by_category
 
 
 class SAVReaderError(Exception):
@@ -63,17 +65,25 @@ class SAVReader:
         self._cached_data = (df, meta)
         return self._cached_data
     
-    def load_preguntas(self) -> list:
+    def load_preguntas(self, categoria_id: Optional[int] = None) -> list:
         """
         Load and parse questions from the SAV file.
         
+        Args:
+            categoria_id: Optional category id to filter questions by
+        
         Returns:
-            List of question dictionaries with identificador, pregunta, and opciones
+            List of question dictionaries with identificador, pregunta, categoria, and opciones
             
         Raises:
             SAVReaderError: If there's an error loading the data
         """
+        # If filtering by category and cache exists, filter from cache
         if self._cached_preguntas is not None:
+            if categoria_id is not None:
+                # Get questions for the specified category
+                category_questions = get_questions_by_category(categoria_id)
+                return [p for p in self._cached_preguntas if p["identificador"] in category_questions]
             return self._cached_preguntas
         
         df, meta = self.load_data()
@@ -87,9 +97,13 @@ class SAVReader:
         for column in df.columns:
             # Only include columns that have a label (question text)
             if column in column_labels and column_labels[column]:
+                # Get category information for this question
+                categoria = get_category_for_question(column)
+                
                 pregunta_info = {
                     "identificador": column,
                     "pregunta": column_labels[column],
+                    "categoria": categoria,
                     "opciones": []
                 }
                 
@@ -104,6 +118,12 @@ class SAVReader:
                 preguntas.append(pregunta_info)
         
         self._cached_preguntas = preguntas
+        
+        # If filtering by category, return filtered list
+        if categoria_id is not None:
+            category_questions = get_questions_by_category(categoria_id)
+            return [p for p in preguntas if p["identificador"] in category_questions]
+        
         return preguntas
     
     def get_question_responses(self, question_id: str, tipo: str = "cantidad") -> dict:

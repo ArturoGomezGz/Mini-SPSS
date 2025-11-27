@@ -12,6 +12,7 @@ from enum import Enum
 import os
 
 from services.sav_reader import SAVReader, SAVReaderError, QuestionNotFoundError
+from services.categories import get_all_categories, get_category_by_id
 
 app = FastAPI()
 
@@ -67,11 +68,62 @@ def get_preguntas():
     Returns for each question:
     - identificador: The variable identifier (e.g., Q_1, T_Q_12_1)
     - pregunta: The question text
+    - categoria: The category the question belongs to (id, nombre, descripcion)
     - opciones: List of possible answer options
     """
     try:
         preguntas = sav_reader.load_preguntas()
         return {"preguntas": preguntas}
+    except SAVReaderError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/categorias")
+def get_categorias():
+    """
+    Endpoint that returns all available question categories.
+    
+    Returns:
+    - categorias: List of categories with:
+        - id: Unique category identifier
+        - nombre: Category name
+        - descripcion: Brief description of the category
+    """
+    categorias = get_all_categories()
+    return {"categorias": categorias}
+
+
+@app.get("/preguntas/categoria/{categoria_id}")
+def get_preguntas_por_categoria(categoria_id: int):
+    """
+    Endpoint that returns questions filtered by category.
+    
+    Parameters:
+    - categoria_id: The category identifier (1-17)
+    
+    Returns for each question:
+    - identificador: The variable identifier (e.g., Q_1, T_Q_12_1)
+    - pregunta: The question text
+    - categoria: The category the question belongs to (id, nombre, descripcion)
+    - opciones: List of possible answer options
+    
+    Raises:
+    - 404: If category_id does not exist
+    """
+    # Validate that the category exists
+    categoria = get_category_by_id(categoria_id)
+    if categoria is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Categoría con id {categoria_id} no encontrada"
+        )
+    
+    try:
+        preguntas = sav_reader.load_preguntas(categoria_id=categoria_id)
+        return {
+            "categoria": categoria,
+            "preguntas": preguntas
+        }
     except SAVReaderError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
