@@ -80,6 +80,9 @@ CATEGORIAS = [
     },
 ]
 
+# Create a lookup dictionary for faster category access by ID
+CATEGORIAS_BY_ID = {cat["id"]: cat for cat in CATEGORIAS}
+
 
 def get_categoria_for_question(identificador: str) -> Optional[dict]:
     """
@@ -97,7 +100,7 @@ def get_categoria_for_question(identificador: str) -> Optional[dict]:
     - Movilidad: Q38-Q43
     - Seguridad: Q44-Q53
     - Medio Ambiente: Q54-Q56, Q60
-    - Ciudadanía y Participación: Q57-Q66
+    - Ciudadanía y Participación: Q57-Q59, Q61-Q66
     - Gobierno y Corrupción: Q67-Q73
     
     Args:
@@ -158,8 +161,8 @@ def get_categoria_for_question(identificador: str) -> Optional[dict]:
     if 54 <= q_num <= 56 or q_num == 60:
         return {"id": 11, "nombre": "Medio Ambiente"}
     
-    # Ciudadanía y Participación: Q57-Q66
-    if 57 <= q_num <= 66:
+    # Ciudadanía y Participación: Q57-Q59 and Q61-Q66 (Q60 is Medio Ambiente)
+    if 57 <= q_num <= 59 or 61 <= q_num <= 66:
         return {"id": 12, "nombre": "Ciudadanía y Participación"}
     
     # Gobierno y Corrupción: Q67-Q73
@@ -296,10 +299,10 @@ class SAVReader:
         Raises:
             CategoryNotFoundError: If category is not found
         """
-        for categoria in CATEGORIAS:
-            if categoria["id"] == categoria_id:
-                return categoria
-        raise CategoryNotFoundError(f"Categoría con id '{categoria_id}' no encontrada")
+        categoria = CATEGORIAS_BY_ID.get(categoria_id)
+        if categoria is None:
+            raise CategoryNotFoundError(f"Categoría con id '{categoria_id}' no encontrada")
+        return categoria
     
     def get_preguntas_by_categoria(self, categoria_id: int) -> list:
         """
