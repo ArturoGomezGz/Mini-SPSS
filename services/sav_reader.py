@@ -6,8 +6,173 @@ It provides functions for loading data, caching, and parsing questions and respo
 """
 
 import os
-from typing import Any, Tuple
+import re
+from typing import Any, Tuple, Optional, List
 import pyreadstat
+
+
+# Category definitions with id, name, and description
+CATEGORIAS = [
+    {
+        "id": 1,
+        "nombre": "Bienestar subjetivo",
+        "descripcion": "Preguntas relacionadas con satisfacción con la vida, calidad de vida y felicidad"
+    },
+    {
+        "id": 2,
+        "nombre": "Relaciones interpersonales / Hogar",
+        "descripcion": "Preguntas sobre relaciones familiares, con vecinos, amigos y compañeros"
+    },
+    {
+        "id": 3,
+        "nombre": "Economía",
+        "descripcion": "Preguntas sobre situación económica, ingresos y empleo"
+    },
+    {
+        "id": 4,
+        "nombre": "Salud",
+        "descripcion": "Preguntas sobre salud física, mental, acceso a servicios de salud y enfermedades"
+    },
+    {
+        "id": 5,
+        "nombre": "Educación",
+        "descripcion": "Preguntas sobre satisfacción con la educación escolar"
+    },
+    {
+        "id": 6,
+        "nombre": "Cultura y recreación",
+        "descripcion": "Preguntas sobre uso del tiempo libre y actividades recreativas"
+    },
+    {
+        "id": 7,
+        "nombre": "Vivienda",
+        "descripcion": "Preguntas sobre satisfacción con la vivienda"
+    },
+    {
+        "id": 8,
+        "nombre": "Espacio público y servicios públicos",
+        "descripcion": "Preguntas sobre calidad de servicios públicos y espacios públicos en la colonia"
+    },
+    {
+        "id": 9,
+        "nombre": "Movilidad",
+        "descripcion": "Preguntas sobre transporte, tiempo de traslado y vialidad"
+    },
+    {
+        "id": 10,
+        "nombre": "Seguridad",
+        "descripcion": "Preguntas sobre percepción de seguridad, delitos y agresiones"
+    },
+    {
+        "id": 11,
+        "nombre": "Medio Ambiente",
+        "descripcion": "Preguntas sobre calidad del aire, agua, ruido y áreas verdes"
+    },
+    {
+        "id": 12,
+        "nombre": "Ciudadanía y Participación",
+        "descripcion": "Preguntas sobre participación ciudadana, organizaciones, igualdad y discriminación"
+    },
+    {
+        "id": 13,
+        "nombre": "Gobierno y Corrupción",
+        "descripcion": "Preguntas sobre confianza en instituciones, gobierno y corrupción"
+    },
+]
+
+# Create a lookup dictionary for faster category access by ID
+CATEGORIAS_BY_ID = {cat["id"]: cat for cat in CATEGORIAS}
+
+# Precompiled regex pattern for extracting question numbers
+QUESTION_ID_PATTERN = re.compile(r'^(?:T_)?Q_(\d+)(?:_.*)?$')
+
+
+def get_categoria_for_question(identificador: str) -> Optional[dict]:
+    """
+    Determine the category for a question based on its identifier.
+    
+    The category mapping is based on question number ranges from the quality of life survey:
+    - Bienestar subjetivo: Q1-Q5
+    - Relaciones interpersonales / Hogar: Q6-Q13
+    - Economía: Q14-Q21
+    - Salud: Q22-Q31
+    - Educación: Q32
+    - Cultura y recreación: Q33-Q34
+    - Vivienda: Q35
+    - Espacio público y servicios públicos: Q36-Q37
+    - Movilidad: Q38-Q43
+    - Seguridad: Q44-Q53
+    - Medio Ambiente: Q54-Q56, Q60
+    - Ciudadanía y Participación: Q57-Q59, Q61-Q66
+    - Gobierno y Corrupción: Q67-Q73
+    
+    Args:
+        identificador: The question identifier (e.g., Q_1, T_Q_12_1)
+        
+    Returns:
+        Category dictionary with id and nombre, or None if no category matches
+    """
+    # Extract the base question number from the identifier
+    # Patterns: Q_1, Q_23_O1, T_Q_12_1, T_Q_25_1, Q_40_C, etc.
+    match = QUESTION_ID_PATTERN.match(identificador)
+    if not match:
+        return None
+    
+    q_num = int(match.group(1))
+    
+    # Bienestar subjetivo: Q1-Q5
+    if 1 <= q_num <= 5:
+        return {"id": 1, "nombre": "Bienestar subjetivo"}
+    
+    # Relaciones interpersonales / Hogar: Q6-Q13
+    if 6 <= q_num <= 13:
+        return {"id": 2, "nombre": "Relaciones interpersonales / Hogar"}
+    
+    # Economía: Q14-Q21
+    if 14 <= q_num <= 21:
+        return {"id": 3, "nombre": "Economía"}
+    
+    # Salud: Q22-Q31
+    if 22 <= q_num <= 31:
+        return {"id": 4, "nombre": "Salud"}
+    
+    # Educación: Q32
+    if q_num == 32:
+        return {"id": 5, "nombre": "Educación"}
+    
+    # Cultura y recreación: Q33-Q34
+    if 33 <= q_num <= 34:
+        return {"id": 6, "nombre": "Cultura y recreación"}
+    
+    # Vivienda: Q35
+    if q_num == 35:
+        return {"id": 7, "nombre": "Vivienda"}
+    
+    # Espacio público y servicios públicos: Q36-Q37
+    if 36 <= q_num <= 37:
+        return {"id": 8, "nombre": "Espacio público y servicios públicos"}
+    
+    # Movilidad: Q38-Q43
+    if 38 <= q_num <= 43:
+        return {"id": 9, "nombre": "Movilidad"}
+    
+    # Seguridad: Q44-Q53
+    if 44 <= q_num <= 53:
+        return {"id": 10, "nombre": "Seguridad"}
+    
+    # Medio Ambiente: Q54-Q56 and Q60
+    if 54 <= q_num <= 56 or q_num == 60:
+        return {"id": 11, "nombre": "Medio Ambiente"}
+    
+    # Ciudadanía y Participación: Q57-Q59 and Q61-Q66 (Q60 is Medio Ambiente)
+    if 57 <= q_num <= 59 or 61 <= q_num <= 66:
+        return {"id": 12, "nombre": "Ciudadanía y Participación"}
+    
+    # Gobierno y Corrupción: Q67-Q73
+    if 67 <= q_num <= 73:
+        return {"id": 13, "nombre": "Gobierno y Corrupción"}
+    
+    return None
 
 
 class SAVReaderError(Exception):
@@ -17,6 +182,11 @@ class SAVReaderError(Exception):
 
 class QuestionNotFoundError(SAVReaderError):
     """Exception raised when a question is not found in the data."""
+    pass
+
+
+class CategoryNotFoundError(SAVReaderError):
+    """Exception raised when a category is not found."""
     pass
 
 
@@ -68,7 +238,7 @@ class SAVReader:
         Load and parse questions from the SAV file.
         
         Returns:
-            List of question dictionaries with identificador, pregunta, and opciones
+            List of question dictionaries with identificador, pregunta, categoria, and opciones
             
         Raises:
             SAVReaderError: If there's an error loading the data
@@ -87,9 +257,13 @@ class SAVReader:
         for column in df.columns:
             # Only include columns that have a label (question text)
             if column in column_labels and column_labels[column]:
+                # Get category for this question
+                categoria = get_categoria_for_question(column)
+                
                 pregunta_info = {
                     "identificador": column,
                     "pregunta": column_labels[column],
+                    "categoria": categoria,
                     "opciones": []
                 }
                 
@@ -105,6 +279,57 @@ class SAVReader:
         
         self._cached_preguntas = preguntas
         return preguntas
+    
+    def get_categorias(self) -> List[dict]:
+        """
+        Get all available categories.
+        
+        Returns:
+            List of category dictionaries with id, nombre, and descripcion.
+            Returns a copy to prevent external modification.
+        """
+        return CATEGORIAS.copy()
+    
+    def get_categoria_by_id(self, categoria_id: int) -> dict:
+        """
+        Get a specific category by its ID.
+        
+        Args:
+            categoria_id: The category ID
+            
+        Returns:
+            Category dictionary with id, nombre, and descripcion
+            
+        Raises:
+            CategoryNotFoundError: If category is not found
+        """
+        categoria = CATEGORIAS_BY_ID.get(categoria_id)
+        if categoria is None:
+            raise CategoryNotFoundError(f"Categoría con id '{categoria_id}' no encontrada")
+        return categoria
+    
+    def get_preguntas_by_categoria(self, categoria_id: int) -> list:
+        """
+        Get all questions for a specific category.
+        
+        Args:
+            categoria_id: The category ID to filter by
+            
+        Returns:
+            List of question dictionaries belonging to the specified category
+            
+        Raises:
+            CategoryNotFoundError: If category is not found
+        """
+        # Verify category exists (raises CategoryNotFoundError if not found)
+        if categoria_id not in CATEGORIAS_BY_ID:
+            raise CategoryNotFoundError(f"Categoría con id '{categoria_id}' no encontrada")
+        
+        preguntas = self.load_preguntas()
+        return [
+            p for p in preguntas 
+            if p["categoria"] is not None and p["categoria"]["id"] == categoria_id
+        ]
     
     def get_question_responses(self, question_id: str, tipo: str = "cantidad") -> dict:
         """
