@@ -85,81 +85,20 @@ def get_categoria_for_question(identificador: str) -> Optional[dict]:
     """
     Determine the category for a question based on its identifier.
     
-    Args:
-        identificador: The question identifier (e.g., Q_1, T_Q_12_1)
-        
-    Returns:
-        Category dictionary with id and nombre, or None if no category matches
-    """
-    # Extract the base question number from the identifier
-    # Patterns: Q_1, Q_23_O1, T_Q_12_1, T_Q_25_1, etc.
-    
-    # Try to extract the main question number
-    match = re.match(r'^(?:T_)?Q_(\d+)(?:_.*)?$', identificador)
-    if not match:
-        return None
-    
-    q_num = int(match.group(1))
-    
-    # Category mappings based on question number ranges
-    # Bienestar subjetivo: Q1-Q5
-    if 1 <= q_num <= 5:
-        return {"id": 1, "nombre": "Bienestar subjetivo"}
-    
-    # Relaciones interpersonales / Hogar: Q6-Q13 (includes T_Q_12_*, T_Q_13_*)
-    if 6 <= q_num <= 13:
-        return {"id": 2, "nombre": "Relaciones interpersonales / Hogar"}
-    
-    # Economía: Q14-Q21
-    if 14 <= q_num <= 21:
-        return {"id": 3, "nombre": "Economía"}
-    
-    # Salud: Q22-Q31 (includes T_Q_25_*, T_Q_26_*, T_Q_27_*, T_Q_28_*, T_Q_29_*, T_Q_30_*)
-    if 22 <= q_num <= 31:
-        return {"id": 4, "nombre": "Salud"}
-    
-    # Educación: Q32
-    if q_num == 32:
-        return {"id": 5, "nombre": "Educación"}
-    
-    # Cultura y recreación: Q33-Q34 (includes Q34_O*)
-    if 33 <= q_num <= 34:
-        return {"id": 6, "nombre": "Cultura y recreación"}
-    
-    # Vivienda: Q35
-    if q_num == 35:
-        return {"id": 7, "nombre": "Vivienda"}
-    
-    # Espacio público y servicios públicos: T_Q_36_*-T_Q_37_*
-    if 36 <= q_num <= 37:
-        return {"id": 8, "nombre": "Espacio público y servicios públicos"}
-    
-    # Movilidad: Q38-Q43 (includes T_Q_39_*, Q40_C, Q42_C, T_Q_43_*)
-    if 38 <= q_num <= 43:
-        return {"id": 9, "nombre": "Movilidad"}
-    
-    # Seguridad: Q44-Q59 (includes Q46_O*, T_Q_58_*, T_Q_59_*)
-    if 44 <= q_num <= 59:
-        return {"id": 10, "nombre": "Seguridad"}
-    
-    # Medio Ambiente: Q54-Q56 -> Actually looking at the image: Q54-T_Q_56_4
-    # But Q54-Q59 is Seguridad, so Medio Ambiente should be Q60-based
-    # Re-checking image: Medio Ambiente is Q54-T_Q_56_4
-    # Let me adjust: The image shows overlapping, so I need to reconsider
-    # Actually Seguridad is Q44-Q53, then Medio Ambiente is Q54-Q56
-    # Let me fix this properly
-    
-    # Correcting based on the image:
-    # Seguridad: Q44-Q53 (includes Q46_O1 to Q46_O5)
-    # Let me redo this logic
-
-    return None
-
-
-def get_categoria_for_question_v2(identificador: str) -> Optional[dict]:
-    """
-    Determine the category for a question based on its identifier.
-    Uses refined logic based on the category mapping image.
+    The category mapping is based on question number ranges from the quality of life survey:
+    - Bienestar subjetivo: Q1-Q5
+    - Relaciones interpersonales / Hogar: Q6-Q13
+    - Economía: Q14-Q21
+    - Salud: Q22-Q31
+    - Educación: Q32
+    - Cultura y recreación: Q33-Q34
+    - Vivienda: Q35
+    - Espacio público y servicios públicos: Q36-Q37
+    - Movilidad: Q38-Q43
+    - Seguridad: Q44-Q53
+    - Medio Ambiente: Q54-Q56, Q60
+    - Ciudadanía y Participación: Q57-Q66
+    - Gobierno y Corrupción: Q67-Q73
     
     Args:
         identificador: The question identifier (e.g., Q_1, T_Q_12_1)
@@ -169,84 +108,61 @@ def get_categoria_for_question_v2(identificador: str) -> Optional[dict]:
     """
     # Extract the base question number from the identifier
     # Patterns: Q_1, Q_23_O1, T_Q_12_1, T_Q_25_1, Q_40_C, etc.
-    
-    # Try to extract the main question number
     match = re.match(r'^(?:T_)?Q_(\d+)(?:_.*)?$', identificador)
     if not match:
         return None
     
     q_num = int(match.group(1))
     
-    # Category mappings based on question number ranges from the image:
-    # 1. Bienestar subjetivo: Q1-Q5
+    # Bienestar subjetivo: Q1-Q5
     if 1 <= q_num <= 5:
         return {"id": 1, "nombre": "Bienestar subjetivo"}
     
-    # 2. Relaciones interpersonales / Hogar: Q6-T_Q_13_6
+    # Relaciones interpersonales / Hogar: Q6-Q13
     if 6 <= q_num <= 13:
         return {"id": 2, "nombre": "Relaciones interpersonales / Hogar"}
     
-    # 3. Economía: Q14-Q21
+    # Economía: Q14-Q21
     if 14 <= q_num <= 21:
         return {"id": 3, "nombre": "Economía"}
     
-    # 4. Salud: Q22-Q31 (Incluye T_Q_25_1 a T_Q_28_9)
+    # Salud: Q22-Q31
     if 22 <= q_num <= 31:
         return {"id": 4, "nombre": "Salud"}
     
-    # 5. Educación: Q32
+    # Educación: Q32
     if q_num == 32:
         return {"id": 5, "nombre": "Educación"}
     
-    # 6. Cultura y recreación: Q33-Q34_O13
+    # Cultura y recreación: Q33-Q34
     if 33 <= q_num <= 34:
         return {"id": 6, "nombre": "Cultura y recreación"}
     
-    # 7. Vivienda: Q35
+    # Vivienda: Q35
     if q_num == 35:
         return {"id": 7, "nombre": "Vivienda"}
     
-    # 8. Espacio público y servicios públicos: T_Q_36_1-T_Q_37_7
+    # Espacio público y servicios públicos: Q36-Q37
     if 36 <= q_num <= 37:
         return {"id": 8, "nombre": "Espacio público y servicios públicos"}
     
-    # 9. Movilidad: Q38-T_Q_43_7 (Incluye Q40_C, Q42_C)
+    # Movilidad: Q38-Q43
     if 38 <= q_num <= 43:
         return {"id": 9, "nombre": "Movilidad"}
     
-    # 10. Seguridad: Q44-Q53 (Incluye Q46_O1 a Q46_O5)
-    # Note: Also includes Q54-Q59 based on T_Q_58_*, T_Q_59_* being security-related
-    # But image says Q44-Q53, so security questions with T_Q_58, T_Q_59 need special handling
+    # Seguridad: Q44-Q53
     if 44 <= q_num <= 53:
         return {"id": 10, "nombre": "Seguridad"}
     
-    # 11. Medio Ambiente: Q54-T_Q_56_4 -> This is actually Q60 range based on re-reading
-    # Looking at the image again: Medio Ambiente is Q54-T_Q_56_4
-    # But wait, the data doesn't have T_Q_56_*, it has T_Q_60_*
-    # Let me check the actual column names in data_info.json
-    # The image shows: Q54-T_Q_56_4, but the data has Q54, Q55, Q56, Q57, T_Q_58_*, T_Q_59_*, T_Q_60_*
-    # So Medio Ambiente should be Q54-Q56 + T_Q_60 related
-    # Actually looking at questions: Q54-Q56 are about environment (air, water, noise, trees, streets)
-    # T_Q_60_* are about environmental satisfaction
-    if 54 <= q_num <= 56:
+    # Medio Ambiente: Q54-Q56 and Q60
+    if 54 <= q_num <= 56 or q_num == 60:
         return {"id": 11, "nombre": "Medio Ambiente"}
     
-    # Also T_Q_60 is about environment satisfaction
-    if q_num == 60:
-        return {"id": 11, "nombre": "Medio Ambiente"}
-    
-    # 12. Ciudadanía y Participación: Q57-T_Q_64_3 (Incluye T_Q_58_1 a T_Q_58_4)
-    # This includes Q57, T_Q_58_*, T_Q_59_*, T_Q_61_*, Q62, T_Q_63_*, T_Q_64_*
-    if q_num == 57:
-        return {"id": 12, "nombre": "Ciudadanía y Participación"}
-    if 58 <= q_num <= 59:
-        return {"id": 12, "nombre": "Ciudadanía y Participación"}
-    if 61 <= q_num <= 64:
+    # Ciudadanía y Participación: Q57-Q66
+    if 57 <= q_num <= 66:
         return {"id": 12, "nombre": "Ciudadanía y Participación"}
     
-    # 13. Gobierno y Corrupción: Q67_O1-T_Q_73_2
-    if 65 <= q_num <= 66:
-        return {"id": 12, "nombre": "Ciudadanía y Participación"}
+    # Gobierno y Corrupción: Q67-Q73
     if 67 <= q_num <= 73:
         return {"id": 13, "nombre": "Gobierno y Corrupción"}
     
@@ -336,7 +252,7 @@ class SAVReader:
             # Only include columns that have a label (question text)
             if column in column_labels and column_labels[column]:
                 # Get category for this question
-                categoria = get_categoria_for_question_v2(column)
+                categoria = get_categoria_for_question(column)
                 
                 pregunta_info = {
                     "identificador": column,
