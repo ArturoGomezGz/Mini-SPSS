@@ -83,6 +83,9 @@ CATEGORIAS = [
 # Create a lookup dictionary for faster category access by ID
 CATEGORIAS_BY_ID = {cat["id"]: cat for cat in CATEGORIAS}
 
+# Precompiled regex pattern for extracting question numbers
+QUESTION_ID_PATTERN = re.compile(r'^(?:T_)?Q_(\d+)(?:_.*)?$')
+
 
 def get_categoria_for_question(identificador: str) -> Optional[dict]:
     """
@@ -111,7 +114,7 @@ def get_categoria_for_question(identificador: str) -> Optional[dict]:
     """
     # Extract the base question number from the identifier
     # Patterns: Q_1, Q_23_O1, T_Q_12_1, T_Q_25_1, Q_40_C, etc.
-    match = re.match(r'^(?:T_)?Q_(\d+)(?:_.*)?$', identificador)
+    match = QUESTION_ID_PATTERN.match(identificador)
     if not match:
         return None
     
@@ -282,7 +285,8 @@ class SAVReader:
         Get all available categories.
         
         Returns:
-            List of category dictionaries with id, nombre, and descripcion
+            List of category dictionaries with id, nombre, and descripcion.
+            Returns a copy to prevent external modification.
         """
         return CATEGORIAS.copy()
     
@@ -317,8 +321,9 @@ class SAVReader:
         Raises:
             CategoryNotFoundError: If category is not found
         """
-        # Verify category exists
-        self.get_categoria_by_id(categoria_id)
+        # Verify category exists (raises CategoryNotFoundError if not found)
+        if categoria_id not in CATEGORIAS_BY_ID:
+            raise CategoryNotFoundError(f"Categoría con id '{categoria_id}' no encontrada")
         
         preguntas = self.load_preguntas()
         return [
