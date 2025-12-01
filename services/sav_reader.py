@@ -102,8 +102,8 @@ def get_categoria_for_question(identificador: str) -> Optional[dict]:
     - Espacio público y servicios públicos: Q36-Q37
     - Movilidad: Q38-Q43
     - Seguridad: Q44-Q53
-    - Medio Ambiente: Q54-Q56, Q60
-    - Ciudadanía y Participación: Q57-Q59, Q61-Q66
+    - Medio Ambiente: Q54-Q56
+    - Ciudadanía y Participación: Q57-Q64
     - Gobierno y Corrupción: Q67-Q73
     
     Args:
@@ -160,12 +160,12 @@ def get_categoria_for_question(identificador: str) -> Optional[dict]:
     if 44 <= q_num <= 53:
         return {"id": 10, "nombre": "Seguridad"}
     
-    # Medio Ambiente: Q54-Q56 and Q60
-    if 54 <= q_num <= 56 or q_num == 60:
+    # Medio Ambiente: Q54-Q56
+    if 54 <= q_num <= 56:
         return {"id": 11, "nombre": "Medio Ambiente"}
     
-    # Ciudadanía y Participación: Q57-Q59 and Q61-Q66 (Q60 is Medio Ambiente)
-    if 57 <= q_num <= 59 or 61 <= q_num <= 66:
+    # Ciudadanía y Participación: Q57-Q64
+    if 57 <= q_num <= 64:
         return {"id": 12, "nombre": "Ciudadanía y Participación"}
     
     # Gobierno y Corrupción: Q67-Q73
