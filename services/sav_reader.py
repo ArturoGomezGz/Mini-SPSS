@@ -70,12 +70,12 @@ CATEGORIAS = [
     },
     {
         "id": 12,
-        "nombre": "Ciudadanía y Participación",
+        "nombre": "Ciudadanía",
         "descripcion": "Preguntas sobre participación ciudadana, organizaciones, igualdad y discriminación"
     },
     {
         "id": 13,
-        "nombre": "Gobierno y Corrupción",
+        "nombre": "Gobierno",
         "descripcion": "Preguntas sobre confianza en instituciones, gobierno y corrupción"
     },
 ]
@@ -93,18 +93,18 @@ def get_categoria_for_question(identificador: str) -> Optional[dict]:
     
     The category mapping is based on question number ranges from the quality of life survey:
     - Bienestar subjetivo: Q1-Q5
-    - Relaciones interpersonales / Hogar: Q6-Q13
+    - Relaciones interpersonales / Hogar: Q6-Q13 (includes T_Q_12_X, T_Q_13_X)
     - Economía: Q14-Q21
-    - Salud: Q22-Q31
+    - Salud: Q22-Q31 (includes T_Q_25_X to T_Q_28_X)
     - Educación: Q32
-    - Cultura y recreación: Q33-Q34
+    - Cultura y recreación: Q33-Q34 (includes Q34_OX)
     - Vivienda: Q35
-    - Espacio público y servicios públicos: Q36-Q37
-    - Movilidad: Q38-Q43
-    - Seguridad: Q44-Q53
-    - Medio Ambiente: Q54-Q56, Q60
-    - Ciudadanía y Participación: Q57-Q59, Q61-Q66
-    - Gobierno y Corrupción: Q67-Q73
+    - Espacio público y servicios públicos: Q36-Q37 (T_Q_36_X to T_Q_37_X)
+    - Movilidad: Q38-Q48
+    - Seguridad: Q49-Q59 (includes T_Q_58_X, T_Q_59_X)
+    - Medio Ambiente: Q60 (T_Q_60_X)
+    - Ciudadanía: Q61-Q70 (includes T_Q_61_X to T_Q_68_X)
+    - Gobierno: Q71-Q73 (includes T_Q_72_X, T_Q_73_X)
     
     Args:
         identificador: The question identifier (e.g., Q_1, T_Q_12_1)
@@ -152,25 +152,25 @@ def get_categoria_for_question(identificador: str) -> Optional[dict]:
     if 36 <= q_num <= 37:
         return {"id": 8, "nombre": "Espacio público y servicios públicos"}
     
-    # Movilidad: Q38-Q43
-    if 38 <= q_num <= 43:
+    # Movilidad: Q38-Q48
+    if 38 <= q_num <= 48:
         return {"id": 9, "nombre": "Movilidad"}
     
-    # Seguridad: Q44-Q53
-    if 44 <= q_num <= 53:
+    # Seguridad: Q49-Q59
+    if 49 <= q_num <= 59:
         return {"id": 10, "nombre": "Seguridad"}
     
-    # Medio Ambiente: Q54-Q56 and Q60
-    if 54 <= q_num <= 56 or q_num == 60:
+    # Medio Ambiente: Q60
+    if q_num == 60:
         return {"id": 11, "nombre": "Medio Ambiente"}
     
-    # Ciudadanía y Participación: Q57-Q59 and Q61-Q66 (Q60 is Medio Ambiente)
-    if 57 <= q_num <= 59 or 61 <= q_num <= 66:
-        return {"id": 12, "nombre": "Ciudadanía y Participación"}
+    # Ciudadanía: Q61-Q70
+    if 61 <= q_num <= 70:
+        return {"id": 12, "nombre": "Ciudadanía"}
     
-    # Gobierno y Corrupción: Q67-Q73
-    if 67 <= q_num <= 73:
-        return {"id": 13, "nombre": "Gobierno y Corrupción"}
+    # Gobierno: Q71-Q73
+    if 71 <= q_num <= 73:
+        return {"id": 13, "nombre": "Gobierno"}
     
     return None
 
